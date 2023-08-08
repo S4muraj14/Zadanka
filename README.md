@@ -1,0 +1,1 @@
+Rozwiązań zadań w ramach przygotowania do Olimpiady Informatycznej.
