@@ -22,7 +22,7 @@ int blok(int x){
 int query(int x, int y){
 
     int b1 = blok(x);
-    int b2 = blok(y);   
+    int b2 = blok(y);
     int ans = max(pelne[b1],pelne[b2]);
 
     if(b1 == b2){
@@ -35,7 +35,7 @@ int query(int x, int y){
         ans = max(ans,arr[x]);
         x++;
     }
-    while(blok(x) == b2){
+    while(blok(y) == b2){
         ans = max(ans,arr[y]);
         y--;
     }
@@ -64,7 +64,7 @@ void update(int x, int y, int val){
         arr[x] = max(arr[x],val);
         x++;
     }
-    while(blok(x) == b2){
+    while(blok(y) == b2){
         arr[y] = max(arr[y],val);
         y--;
     }
