@@ -15,77 +15,65 @@ const int base = 60;
 const int max_n = 1007;
 
 struct node{
-    int out = 0;
-    int c = 0;
-    node* nearest;
-    node* anc;
-    node* suflink;
-    node* next[base];
-    node* mem_go[base];
+    vector<int> ind;
+    int c = 0; //jaka litera
+    bool checked = false; //czy wzielismy ans
+    bool out = false; //czy cos sie konczy w danym v
+    int nearest = 0; //najblizszy gdzie sie cos konczy
+    int anc = 0;
+    int suflink = 0;
+    int next[base];
+    int mem_go[base];
 
-    node(int new_c, node* new_anc){
+    node(int new_c, int new_anc){
         c = new_c;
         anc = new_anc;
-        nearest = nullptr;
-        suflink = nullptr;
         for(int i = 0; i < base; i++){
-            next[i] = nullptr;
-            mem_go[i] = nullptr;
+            next[i] = 0;
+            mem_go[i] = 0;
         }
-    }
-    ~node(){
-        for(int i = 0; i < base; i++)
-            if(next[i]) delete next[i];
     }
 };
 
-node* start = new node(0,nullptr);
 bool ans[max_n];
+vector<node> vec;
 
-node* go(node* v, int c);
+int go(int v, int c);
 
-node* suf(node *v){
-    //cout << "suflink od: " << v << '\n';
-    if(!v->suflink){
-        node* x = v->anc;
-        //moze check na anc niepotrzebny
-        if(x == start || x->anc == start) v->suflink = start; 
-        else v->suflink = go(x->suflink,x->c);
+int suf(int v){
+    if(!vec[v].suflink){
+        int x = vec[v].anc;
+        if(v == 1 || x == 1) vec[v].suflink = 1; 
+        else vec[v].suflink = go(suf(x),vec[v].c);
+
+        x = vec[v].suflink;
+        if(vec[x].out) vec[v].nearest = x;
+        else vec[v].nearest = vec[x].nearest;
     }
-    node* x = v->suflink;
-    while(!x->out && x != start)
-        x = suf(x);
-    v->nearest = x;
 
-    return v->suflink;
+    return vec[v].suflink;
 }
 
-node* go(node *v, int c){
-    if(!v->mem_go[c]){
-        if(v->next[c])
-            v->mem_go[c] = v->next[c];
+int go(int v, int c){
+    if(!vec[v].mem_go[c]){
+        if(vec[v].next[c])
+            vec[v].mem_go[c] = vec[v].next[c];
         else{
-            if(v == start) v->mem_go[c] = start;
-            else v->mem_go[c] = go(suf(v),c); 
+            if(v == 1) vec[v].mem_go[c] = 1;
+            else vec[v].mem_go[c] = go(suf(v),c); 
         }
     }
-    return v->mem_go[c];
+    return vec[v].mem_go[c];
 }
 
-void dfs(node* v){
-    //cout << "dfs od: " << v << '\n';
-    if(!suf(v)){
+void dfs(int v){
+    if(!suf(v))
         suf(v);
-        //cout << "utworzony suf\n";
-    }
     for(int i = 0; i < base; i++)
-        if(v->next[i]) dfs(v->next[i]);
+        if(vec[v].next[i]) dfs(vec[v].next[i]);
 }
 
 int main(){
-
-    ios::sync_with_stdio(0);
-    cin.tie(0);
 
     int t;
     cin >> t;
@@ -95,47 +83,48 @@ int main(){
         int n;
         cin >> s >> n;
 
-        start->nearest = start;
-        start->anc = start;
+        node blank(0,0);
+        node start(0,1);
+        vec.push_back(blank);
+        vec.push_back(start);
+        vec[1].out = true;
 
         for(int i = 1; i <= n; i++){
             string x;
             cin >> x;
 
-            node* v = start;
-            //cout << "dodajemy: " << x << " na drzewo\n";
+            int v = 1;
             for(int j = 0; j < x.length(); j++){
                 int c = (x[j]-'A');
-                if(!v->next[c]) v->next[c] = new node(c,v);
-                v = v->next[c];
-                //cout << "j: " << j << " v: " << v << " c: " << c << '\n';
+                if(!vec[v].next[c]){
+                    vec[v].next[c] = vec.size();
+                    node a(c,v);
+                    vec.push_back(a);
+                }
+                v = vec[v].next[c];
             }
-            v->out = i; //konczy sie w danym v
-            //cout << "v: " << v << " out: " << v->out << '\n';
+            vec[v].out = true; //konczy sie w danym v
+            vec[v].ind.push_back(i);
         }
 
-        //cout << "udane drzewo trie\n";
+        dfs(1);
 
-        //set suflink i nearest
-        dfs(start);
-
-        //cout << "udany dfs\n";
-
-        node* v = start;
+        int v = 1;
         for(int i = 0; i < s.length(); i++){
             int c = int(s[i]-'A');
             v = go(v,c);
 
-            //cout << "i: " << i << " v: " << v << '\n';
-            //cout << "out: " << v->out << '\n';
-            if(v->out) ans[v->out] = true;
-            //cout << "out\n";
-            node* x = v->nearest;
-            //cout << "x: " << x << '\n';
-            while(x != start){
-                //cout << "petla nearest\n";
-                ans[x->out] = true;
-                x = x->nearest;
+            if(vec[v].out)
+                for(auto y : vec[v].ind)
+                    ans[y] = true;
+                
+            int x = vec[v].nearest;
+            while(x != 1 && !vec[x].checked){
+                for(auto y : vec[x].ind)
+                    ans[y] = true;
+                
+                vec[x].checked = true;
+                x = vec[x].nearest;
             }
         }
 
@@ -144,13 +133,7 @@ int main(){
             else cout << "n\n";
         }
 
-        for(int i = 0; i < base; i++){
-            if(start->next[i]){
-                delete start->next[i];
-                start->next[i] = nullptr;
-            }
-            start->mem_go[i] = nullptr;
-        }
+        vec.clear();
         for(int i = 1; i <= n; i++) ans[i] = false;
     }
 
